@@ -143,3 +143,41 @@ UV 指独立访客，访问网页的一个客户端为一个访客。一段时�
 ```sql
 select count(identify) as uv, url from series where time >= '2017-01-01T00:00:00Z' and time <= '2017-01-01T23:59:59Z' group by url
 ```
+
+## 样例：统计页面停留时间
+
+统计页面停留时间的方法有很多种，这里只说最简单的一种方式。当用户打开一个页面后，每隔一段时间（如10s）就上报一次。
+
+```javascript
+setTimeout(function() {
+    QiniuPandora.pushToPandoraPipeline(repo, auth, [{
+      "identify": "12739878621783",
+      "url": "/post/27321242",
+      "device": "iPhone",
+      "os": "iOS 10.0.1",
+    }]);
+}, 10000);
+```
+
+时序数据库内字段结构如下。
+
+|   字段名称   |   类型   | 是否为 Tag |
+| :------: | :----: | :-----: |
+| identify | string |    是    |
+|   url    | string |    是    |
+|  device  | string |    否    |
+|    os    | string |    否    |
+|   time   |  time  |         |
+
+我们可以通过如下 SQL 语句，查询某一天内，某个 url 的停留总时长。
+
+```sql
+select count(*)*10 as time, url from series where time >= '2017-01-01T00:00:00Z' and time <= '2017-01-01T23:59:59Z' group by url
+```
+
+我们也可以通过如下 SQL，查询某一天内，特定用户在网站停留的总时长。
+
+```sql
+select count(*)*10 as time, identify from series where time >= '2017-01-01T00:00:00Z' and time <= '2017-01-01T23:59:59Z' group by identify
+```
+
